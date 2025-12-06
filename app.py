@@ -11,9 +11,7 @@ def main():
     st.write("Bienvenido al sistema de gestión de salones y espacios.")
     
     if usuario:
-        st.balloons()
         renderizar_sidebar(usuario)
-        
         st.divider()
         view_salones()
 

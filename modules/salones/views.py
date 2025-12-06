@@ -1,13 +1,14 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import time
 from modules.models import Rol, TipoSalon
 from .queries import (
     obtener_catalogo_salones,
     obtener_salones_avanzado,
     obtener_top_salones_ocupados
 )
-from .transactions import crear_salon
+from .transactions import crear_salon, borrar_salon
 
 def view_salones():
     """
@@ -55,14 +56,71 @@ def view_salones():
                 top_tipo = df_salones['tipo'].mode()[0]
                 col3.metric("Tipo más común", top_tipo)
 
-            # Mostramos la tabla con configuración para que ocupe el ancho
-            st.dataframe(
-                df_salones, 
-                use_container_width=True,
-                hide_index=True
-            )
+            # Lógica de visualización/edición
+            if es_admin:
+                st.write("📝 **Modo Administrador**: Selecciona los salones que deseas eliminar.")
+                
+                # Añadimos columna para selección si no existe
+                if "Eliminar" not in df_salones.columns:
+                    df_salones["Eliminar"] = False
+                
+                # Reordenamos columnas para que Eliminar salga primero
+                cols = ["Eliminar"] + [c for c in df_salones.columns if c != "Eliminar"]
+                df_salones = df_salones[cols]
+
+                # Editor de datos
+                edited_df = st.data_editor(
+                    df_salones,
+                    column_config={
+                        "Eliminar": st.column_config.CheckboxColumn(
+                            "Eliminar",
+                            help="Selecciona para borrar este salón",
+                            default=False,
+                        ),
+                        "id_salon": st.column_config.TextColumn(
+                            "ID Salón",
+                            disabled=True
+                        ),
+                        "capacidad": st.column_config.NumberColumn(
+                            "Capacidad",
+                            disabled=True
+                        ),
+                        "tipo": st.column_config.TextColumn(
+                            "Tipo",
+                            disabled=True
+                        )
+                    },
+                    disabled=["id_salon", "capacidad", "tipo"], # Refuerzo de seguridad
+                    hide_index=True,
+                    use_container_width=True,
+                    key="editor_salones"
+                )
+
+                # Detectar filas marcadas para eliminar
+                to_delete = edited_df[edited_df["Eliminar"] == True]
+                
+                if not to_delete.empty:
+                    st.warning(f"Has seleccionado {len(to_delete)} salones para eliminar.")
+                    if st.button("🗑️ Confirmar Eliminación", type="primary"):
+                        for index, row in to_delete.iterrows():
+                            success, msg = borrar_salon(row['id_salon'])
+                            if success:
+                                st.toast(f"Salón {row['id_salon']} eliminado.")
+                            else:
+                                st.error(f"Error al eliminar {row['id_salon']}: {msg}")
+                        
+                        time.sleep(1)
+                        st.rerun()
+
+            else:
+                # Vista solo lectura para no admins
+                st.dataframe(
+                    df_salones, 
+                    use_container_width=True,
+                    hide_index=True
+                )
         else:
-            st.info("No se encontraron salones registrados o hubo un error en la conexión.")
+            st.info("No se encontraron salones registrados.")
 
     # --- TAB 2: BÚSQUEDA ---
     with tab_busqueda:
@@ -139,6 +197,7 @@ def view_salones():
                         exito, msg = crear_salon(new_id, new_capacidad, new_tipo)
                         if exito:
                             st.success(msg)
+                            time.sleep(1) 
                             st.rerun()
                         else:
                             st.error(msg)
