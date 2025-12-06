@@ -1,9 +1,9 @@
 # Complex SQL: JOINs for readable view
 # modules/horarios/queries.py
 from config.db import get_connection
-import mysql.connector  # importante para capturar errores específicos
+import mysql.connector
 
-def get_schedule_view():
+def obtener_horario_completo():
     conn = None
     cursor = None
     

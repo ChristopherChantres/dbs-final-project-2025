@@ -3,7 +3,7 @@ from mysql.connector import Error
 import os
 import streamlit as st
 
-# Attempt to load .env if not in a container environment where variables are already set
+# Intentar cargar .env si no estamos en un entorno de contenedor donde ya están establecidas las variables
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -20,7 +20,7 @@ class DatabaseConnection:
         return cls._instance
 
     def _create_connection(self):
-        """Establishes a connection to the database."""
+        """Establece una conexión con la base de datos."""
         try:
             self._connection = mysql.connector.connect(
                 host=os.getenv("DB_HOST", "localhost"),
@@ -30,20 +30,29 @@ class DatabaseConnection:
                 port=int(os.getenv("DB_PORT", 3306))
             )
             if self._connection.is_connected():
-                # print("Connection to MySQL DB successful") # Avoid printing in production
+                # print("Conexión a MySQL exitosa") # Evitar imprimir en producción
                 pass
         except Error as e:
-            st.error(f"Error while connecting to MySQL: {e}")
+            st.error(f"Error al conectar a MySQL: {e}")
             self._connection = None
 
     def get_connection(self):
-        """Returns the active database connection. Reconnects if necessary."""
+        """Retorna la conexión activa a la base de datos. Reconecta si es necesario."""
         if self._connection is None or not self._connection.is_connected():
             self._create_connection()
         return self._connection
 
     def close_connection(self):
-        """Closes the database connection."""
+        """Cierra la conexión con la base de datos."""
         if self._connection is not None and self._connection.is_connected():
             self._connection.close()
-            # print("MySQL connection is closed")
+            # print("La conexión a MySQL fue cerrada")
+
+# Importación sencilla: función para obtener la conexión singleton a la base de datos
+def get_connection():
+    """
+    Retorna una conexión singleton a MySQL, reconectando si es necesario.
+    Uso: from config.db import get_connection
+    """
+    db_singleton = DatabaseConnection()
+    return db_singleton.get_connection()
