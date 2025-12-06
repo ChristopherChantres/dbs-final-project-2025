@@ -8,16 +8,18 @@ import time
 from datetime import time as dt_time
 
 from modules.models import Rol
+# si está en otro módulo, ajusta el import
 from .queries import (
     obtener_horario_completo,
     filtrar_horario,
-    obtener_catalogo_salones,  # si está en otro módulo, ajusta el import
 )
+from modules.salones.queries import obtener_catalogo_salones
 from .transactions import (
     crear_horario,
     actualizar_horario,
     eliminar_horario,
 )
+
 
 
 def view_horarios():

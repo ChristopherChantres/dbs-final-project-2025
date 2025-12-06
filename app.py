@@ -2,6 +2,7 @@ import streamlit as st
 from modules.auth.ui import renderizar_login, renderizar_sidebar
 from modules.salones.views import view_salones
 from modules.reservaciones.views import view_reservaciones
+from modules.horarios.views import view_horarios
 from utils.ui import aplicar_tema_personalizado
 
 def main():
