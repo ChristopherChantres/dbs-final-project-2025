@@ -10,11 +10,11 @@ def cancelar_reservacion(id_reservacion: int) -> tuple[bool, str]:
     """
     Elimina una reservación existente.
     """
-    conn = get_connection()
-    conn.autocommit = False
-    cursor = conn.cursor()
 
     try:
+        conn = get_connection()
+        conn.autocommit = False
+        cursor = conn.cursor()
         cursor.execute("DELETE FROM reservacion WHERE id_reservacion=%s", (id_reservacion))
         conn.commit()
         return (True, "Reservación cancelada correctamente")

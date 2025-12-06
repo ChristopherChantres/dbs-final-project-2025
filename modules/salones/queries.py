@@ -10,11 +10,11 @@ def obtener_catalogo_salones() -> pd.DataFrame:
 
         query = """
             SELECT 
-                idSalon,
+                id_salon,
                 capacidad,
                 tipo
-            FROM Salon
-            ORDER BY idSalon;
+            FROM salon
+            ORDER BY id_salon;
         """
 
         cursor.execute(query)
@@ -33,10 +33,10 @@ def obtener_salones_avanzado(capacidad_min: int = 0, tipo: Optional[str] = None)
 
         query = """
             SELECT 
-                idSalon,
+                id_salon,
                 capacidad,
                 tipo
-            FROM Salon
+            FROM salon
             WHERE capacidad >= %s
         """
 
@@ -65,19 +65,30 @@ def obtener_top_salones_ocupados(limit: int = 5) -> pd.DataFrame:
 
         query = """
             SELECT
-                s.idSalon,
+                s.id_salon,
                 s.tipo,
                 s.capacidad,
-                SUM(h.duracion) AS horas_ocupadas
-            FROM Salon s
-            JOIN Horario h ON h.idSalon = s.idSalon
-            GROUP BY s.idSalon, s.tipo, s.capacidad
+                SUM(h.duracion_minutos) AS horas_ocupadas
+            FROM salon s
+            JOIN horario h ON h.id_salon = s.id_salon
+            GROUP BY s.id_salon, s.tipo, s.capacidad
             ORDER BY horas_ocupadas DESC
             LIMIT %s;
         """
 
         cursor.execute(query, (limit,))
         rows = cursor.fetchall()
+        
+        # Convert minutes to hours for display if needed, 
+        # but for now keeping raw minutes or dividing by 60 in view
+        if rows:
+            for row in rows:
+                 # Convertir minutos a horas (float)
+                if row['horas_ocupadas']:
+                    row['horas_ocupadas'] = float(row['horas_ocupadas']) / 60.0
+                else:
+                    row['horas_ocupadas'] = 0.0
+        
         return pd.DataFrame(rows)
 
     except mysql.connector.Error as err:
