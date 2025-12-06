@@ -48,8 +48,4 @@ def get_schedule_view():
         print(" ERROR inesperado:", e)
         return {"error": str(e)}
 
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+  
