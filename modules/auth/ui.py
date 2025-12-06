@@ -14,7 +14,7 @@ def renderizar_login():
         return st.session_state['usuario_activo']
 
     # 2. Si no hay sesión, mostramos el Login/Registro
-    st.header("🔐 Sistema Escolar - Acceso")
+    st.header("🔐 Scheduleee For Dummies")
     
     tab_login, tab_registro = st.tabs(["Login", "Registro"])
 

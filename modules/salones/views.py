@@ -154,7 +154,7 @@ def view_salones():
     with tab_stats:
         st.subheader("Top Salones Ocupados")
         
-        limit = st.slider("Cantidad a mostrar", 3, 10, 5)
+        limit = st.slider("Cantidad a mostrar", 1, 10, 1)
         df_top = obtener_top_salones_ocupados(limit)
         
         if not df_top.empty and 'horas_ocupadas' in df_top.columns:

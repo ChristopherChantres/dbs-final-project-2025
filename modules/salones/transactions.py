@@ -43,5 +43,7 @@ def borrar_salon(id_salon: str) -> tuple[bool, str]:
             return False, "No se puede borrar: el salón tiene registros asociados."
         return False, f"Error al borrar el salon: {err}"
     finally:
+        # Cerramos el cursor para liberar memoria
+        # Pero mantenemos la conexión (conn) abierta.
         if cursor:
             cursor.close()

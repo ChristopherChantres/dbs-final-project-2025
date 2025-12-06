@@ -1,6 +1,7 @@
 import streamlit as st
 from modules.auth.ui import renderizar_login, renderizar_sidebar
 from modules.salones.views import view_salones
+from modules.reservaciones.views import view_reservaciones
 from utils.ui import aplicar_tema_personalizado
 
 def main():
@@ -14,6 +15,6 @@ def main():
         renderizar_sidebar(usuario)
         st.divider()
         view_salones()
-
+        view_reservaciones()
 if __name__ == "__main__":
     main()
