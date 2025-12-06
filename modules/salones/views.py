@@ -124,7 +124,7 @@ def view_salones():
 
     # --- TAB 2: BÚSQUEDA ---
     with tab_busqueda:
-        st.subheader("Encontrar salón disponible")
+        st.subheader("Encontrar salón")
         
         # Controles de filtro en columnas
         c1, c2, c3 = st.columns([2, 2, 1])

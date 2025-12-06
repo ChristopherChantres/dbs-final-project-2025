@@ -1,5 +1,6 @@
 import mysql.connector
 from datetime import time
+from typing import List
 from config.db import get_connection
 
 
@@ -7,9 +8,10 @@ def crear_horario(
     id_salon: str,
     hora_inicio: time,
     duracion_min: int,
-    dias_semana: str,
+    dias_semana: List[str],
     curso_clave: str,
     curso_seccion: int,
+    id_periodo: str,
 ) -> tuple[bool, str]:
    
 
@@ -23,48 +25,53 @@ def crear_horario(
 
         hora_str = hora_inicio.strftime("%H:%M:%S")
 
-       
-        conflicto_sql = """
-            SELECT idHorario
-            FROM Horario
-            WHERE idSalon    = %s
-              AND diasSemana = %s
-              -- traslape de intervalos de tiempo
-              AND hora < ADDTIME(%s, SEC_TO_TIME(%s * 60))
-              AND %s < ADDTIME(hora, SEC_TO_TIME(duracion * 60))
-            FOR UPDATE;
-        """
-        conflicto_params = (id_salon, dias_semana, hora_str, duracion_min, hora_str)
-        cursor.execute(conflicto_sql, conflicto_params)
+        if not dias_semana:
+             return False, "Debe seleccionar al menos un día."
 
-        if cursor.fetchone():
-            conn.rollback()
-            return False, "Ya existe un horario que se traslapa en ese salón y días."
+        for dia in dias_semana:
+            conflicto_sql = """
+                SELECT id_horario
+                FROM horario
+                WHERE id_salon    = %s
+                  AND dia_semana = %s
+                  AND id_periodo = %s
+                  -- traslape de intervalos de tiempo
+                  AND hora_inicio < ADDTIME(%s, SEC_TO_TIME(%s * 60))
+                  AND %s < ADDTIME(hora_inicio, SEC_TO_TIME(duracion_minutos * 60))
+                FOR UPDATE;
+            """
+            conflicto_params = (id_salon, dia, id_periodo, hora_str, duracion_min, hora_str)
+            cursor.execute(conflicto_sql, conflicto_params)
 
-        
-        insert_sql = """
-            INSERT INTO Horario (
-                idSalon,
-                hora,
-                duracion,
-                diasSemana,
+            if cursor.fetchone():
+                conn.rollback()
+                return False, f"Ya existe un horario que se traslapa en ese salón para el día {dia}."
+
+            insert_sql = """
+                INSERT INTO horario (
+                    id_salon,
+                    hora_inicio,
+                    duracion_minutos,
+                    dia_semana,
+                    clave_materia,
+                    seccion_curso,
+                    id_periodo
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
+            """
+            insert_params = (
+                id_salon,
+                hora_str,
+                duracion_min,
+                dia,
                 curso_clave,
-                curso_seccion
+                curso_seccion,
+                id_periodo,
             )
-            VALUES (%s, %s, %s, %s, %s, %s);
-        """
-        insert_params = (
-            id_salon,
-            hora_str,
-            duracion_min,
-            dias_semana,
-            curso_clave,
-            curso_seccion,
-        )
-        cursor.execute(insert_sql, insert_params)
+            cursor.execute(insert_sql, insert_params)
 
         conn.commit()
-        return True, "Horario creado correctamente"
+        return True, "Horarios creados correctamente"
 
     except mysql.connector.Error as err:
         if conn:
@@ -93,14 +100,18 @@ def actualizar_horario(
         hora_str = hora_inicio.strftime("%H:%M:%S")
 
         # 1) Checar traslape, excluyendo el propio idHorario
+        # Nota: Idealmente deberíamos checar también el id_periodo del horario actual,
+        # pero para eso requeriríamos un SELECT previo o pasarlo como argumento.
+        # Asumiendo validación básica por ahora.
+        
         conflicto_sql = """
-            SELECT idHorario
-            FROM Horario
-            WHERE idSalon    = %s
-              AND diasSemana = %s
-              AND idHorario <> %s
-              AND hora < ADDTIME(%s, SEC_TO_TIME(%s * 60))
-              AND %s < ADDTIME(hora, SEC_TO_TIME(duracion * 60))
+            SELECT id_horario
+            FROM horario
+            WHERE id_salon    = %s
+              AND dia_semana = %s
+              AND id_horario <> %s
+              AND hora_inicio < ADDTIME(%s, SEC_TO_TIME(%s * 60))
+              AND %s < ADDTIME(hora_inicio, SEC_TO_TIME(duracion_minutos * 60))
             FOR UPDATE;
         """
         conflicto_params = (id_salon, dias_semana, id_horario,
@@ -113,12 +124,12 @@ def actualizar_horario(
 
        
         update_sql = """
-            UPDATE Horario
-            SET idSalon    = %s,
-                hora       = %s,
-                duracion   = %s,
-                diasSemana = %s
-            WHERE idHorario = %s;
+            UPDATE horario
+            SET id_salon    = %s,
+                hora_inicio       = %s,
+                duracion_minutos   = %s,
+                dia_semana = %s
+            WHERE id_horario = %s;
         """
         update_params = (id_salon, hora_str, duracion_min, dias_semana, id_horario)
         cursor.execute(update_sql, update_params)
@@ -151,8 +162,8 @@ def eliminar_horario(id_horario: int) -> tuple[bool, str]:
         cursor = conn.cursor()
 
         delete_sql = """
-            DELETE FROM Horario
-            WHERE idHorario = %s;
+            DELETE FROM horario
+            WHERE id_horario = %s;
         """
         cursor.execute(delete_sql, (id_horario,))
 

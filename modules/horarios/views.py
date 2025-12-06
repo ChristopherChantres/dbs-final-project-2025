@@ -1,14 +1,8 @@
-# Timetable grid
-
 import streamlit as st
-import pandas as pd
-import altair as alt
+from datetime import time as dt_time
+from modules.models import Rol, DiaSemana
 import time
 
-from datetime import time as dt_time
-
-from modules.models import Rol
-# si está en otro módulo, ajusta el import
 from .queries import (
     obtener_horario_completo,
     filtrar_horario,
@@ -19,20 +13,14 @@ from .transactions import (
     actualizar_horario,
     eliminar_horario,
 )
-
-
+from modules.cursos.queries import obtener_cursos_existentes
 
 def view_horarios():
-    
-
-   
     usuario = st.session_state.get("usuario_activo", {})
     rol_usuario = usuario.get("rol")
 
     es_admin = rol_usuario == Rol.ADMINISTRADOR.value
     es_profesor = rol_usuario == Rol.PROFESOR.value
-    es_alumno = rol_usuario == Rol.ALUMNO.value
-
     
     titulos_tabs = ["📋 Horario completo", "🔍 Filtro por periodo/día"]
     if es_profesor:
@@ -61,8 +49,8 @@ def view_horarios():
             col1, col2, col3 = st.columns(3)
             col1.metric("Total de horarios", len(df))
 
-            if "idSalon" in df.columns:
-                col2.metric("Salones distintos", df["idSalon"].nunique())
+            if "id_salon" in df.columns:
+                col2.metric("Salones distintos", df["id_salon"].nunique())
 
             if "materia" in df.columns:
                 col3.metric("Materias distintas", df["materia"].nunique())
@@ -70,7 +58,7 @@ def view_horarios():
            
             c1, c2, c3 = st.columns(3)
             with c1:
-                salones = ["Todos"] + sorted(df["idSalon"].unique().tolist())
+                salones = ["Todos"] + sorted(df["id_salon"].unique().tolist())
                 filtro_salon = st.selectbox("Filtrar por salón", salones)
             with c2:
                 materias = ["Todas"] + sorted(df["materia"].unique().tolist())
@@ -81,7 +69,7 @@ def view_horarios():
 
             df_filtrado = df.copy()
             if filtro_salon != "Todos":
-                df_filtrado = df_filtrado[df_filtrado["idSalon"] == filtro_salon]
+                df_filtrado = df_filtrado[df_filtrado["id_salon"] == filtro_salon]
             if filtro_materia != "Todas":
                 df_filtrado = df_filtrado[df_filtrado["materia"] == filtro_materia]
             if filtro_profesor != "Todos":
@@ -92,21 +80,20 @@ def view_horarios():
     
     with tab_filtro:
         st.subheader("Filtrar horario por periodo y día")
-
        
         df = obtener_horario_completo()
 
         if df.empty:
             st.info("No hay datos de horarios para filtrar.")
         else:
-            periodos_unicos = df["idPeriodo"].unique().tolist()
+            periodos_unicos = df["id_periodo"].unique().tolist()
             c1, c2 = st.columns(2)
             with c1:
                 id_periodo = st.selectbox("Periodo", periodos_unicos)
             with c2:
                 dia_semana = st.selectbox(
                     "Día de la semana (opcional)",
-                    ["Todos", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+                    ["Todos", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
                 )
 
             dia_param = None if dia_semana == "Todos" else dia_semana
@@ -172,11 +159,11 @@ def view_horarios():
                             help="Selecciona para borrar este horario",
                             default=False
                         ),
-                        "idHorario": st.column_config.TextColumn("ID Horario", disabled=True),
-                        "hora": st.column_config.TextColumn("Hora", disabled=True),
-                        "duracion": st.column_config.NumberColumn("Duración", disabled=True),
-                        "diasSemana": st.column_config.TextColumn("Días", disabled=True),
-                        "idSalon": st.column_config.TextColumn("Salón", disabled=True),
+                        "id_horario": st.column_config.TextColumn("ID Horario", disabled=True),
+                        "hora_inicio": st.column_config.TextColumn("Hora", disabled=True),
+                        "duracion_minutos": st.column_config.NumberColumn("Duración", disabled=True),
+                        "dia_semana": st.column_config.TextColumn("Días", disabled=True),
+                        "id_salon": st.column_config.TextColumn("Salón", disabled=True),
                         "materia": st.column_config.TextColumn("Materia", disabled=True),
                         "profesor": st.column_config.TextColumn("Profesor", disabled=True),
                     },
@@ -189,11 +176,11 @@ def view_horarios():
                     st.warning(f"Has marcado {len(to_delete)} horarios para eliminar.")
                     if st.button("🗑️ Confirmar eliminación", type="primary"):
                         for _, row in to_delete.iterrows():
-                            ok, msg = eliminar_horario(int(row["idHorario"]))
+                            ok, msg = eliminar_horario(int(row["id_horario"]))
                             if ok:
-                                st.toast(f"Horario {row['idHorario']} eliminado.")
+                                st.toast(f"Horario {row['id_horario']} eliminado.")
                             else:
-                                st.error(f"Error al eliminar {row['idHorario']}: {msg}")
+                                st.error(f"Error al eliminar {row['id_horario']}: {msg}")
                         time.sleep(1)
                         st.rerun()
 
@@ -203,53 +190,68 @@ def view_horarios():
             st.markdown("### ➕ Crear nuevo horario")
 
             df_salones = obtener_catalogo_salones()
-            if df_salones.empty:
+            # Fetch valid courses instead of just periods
+            df_cursos = obtener_cursos_existentes() 
+
+            if df_cursos.empty:
+                st.warning("⚠️ No hay cursos registrados. Ve a la sección 'Cursos' primero.")
+            elif df_salones.empty:
                 st.warning("No hay salones registrados. Primero crea salones.")
             else:
                 with st.form("form_nuevo_horario"):
+                    # Filter logic: Select Period first, then show courses for that period
+                    periodos_disponibles = df_cursos["id_periodo"].unique()
+                    
+                    c_top1, c_top2 = st.columns(2)
+                    with c_top1:
+                        periodo_sel = st.selectbox("1. Selecciona Periodo", periodos_disponibles)
+                    
+                    # Filter courses by selected period
+                    cursos_periodo = df_cursos[df_cursos["id_periodo"] == periodo_sel]
+                    
+                    # Create a label for the dropdown: "LIS-2082 (Sec 1) - Bases de Datos"
+                    cursos_periodo["label"] = (
+                        cursos_periodo["clave_materia"] + " (Sec " + 
+                        cursos_periodo["seccion"].astype(str) + ") - " + 
+                        cursos_periodo["materia_titulo"]
+                    )
+                    
+                    with c_top2:
+                        curso_seleccionado_label = st.selectbox(
+                            "2. Selecciona Curso", 
+                            cursos_periodo["label"]
+                        )
+
+                    st.markdown("---")
+                    
+                    # Get the IDs from the selection
+                    row_curso = cursos_periodo[cursos_periodo["label"] == curso_seleccionado_label].iloc[0]
+                    
+                    # Schedule Details
                     c1, c2, c3 = st.columns(3)
                     with c1:
-                        id_salon = st.selectbox(
-                            "Salón",
-                            options=df_salones["id_salon"].tolist()
-                        )
-                        dias_semana = st.text_input(
-                            "Días de la semana (ej. MON-WED-FRI)"
-                        )
+                        id_salon = st.selectbox("Salón", df_salones["id_salon"])
                     with c2:
-                        hora_inicio = st.time_input(
-                            "Hora de inicio",
-                            value=dt_time(7, 0)
-                        )
-                        duracion_min = st.number_input(
-                            "Duración (minutos)",
-                            min_value=10,
-                            max_value=300,
-                            value=60,
-                            step=10
-                        )
+                        dias = st.multiselect("Días", [d.value for d in DiaSemana])
                     with c3:
-                        curso_clave = st.text_input("Clave del curso")
-                        curso_seccion = st.number_input(
-                            "Sección del curso",
-                            min_value=1,
-                            step=1,
-                            value=1
-                        )
+                        hora = st.time_input("Hora Inicio", value=dt_time(9,0))
+                        duracion = st.number_input("Duración (min)", value=90, step=30)
 
-                    submitted = st.form_submit_button("💾 Crear horario", type="primary")
-
+                    submitted = st.form_submit_button("Guardar Horario")
+                    
                     if submitted:
-                        if not (id_salon and dias_semana and curso_clave):
-                            st.warning("ID salón, días y clave del curso son obligatorios.")
+                        if not dias:
+                            st.error("Selecciona al menos un día.")
                         else:
+                            # Pass the IDs from the selected course row
                             ok, msg = crear_horario(
                                 id_salon=id_salon,
-                                hora_inicio=hora_inicio,
-                                duracion_min=int(duracion_min),
-                                dias_semana=dias_semana,
-                                curso_clave=curso_clave,
-                                curso_seccion=int(curso_seccion),
+                                hora_inicio=hora,
+                                duracion_min=duracion,
+                                dias_semana=dias,
+                                curso_clave=row_curso["clave_materia"],
+                                curso_seccion=int(row_curso["seccion"]),
+                                id_periodo=row_curso["id_periodo"]
                             )
                             if ok:
                                 st.success(msg)

@@ -1,6 +1,7 @@
 import streamlit as st
 from .services import autenticar_usuario, registrar_nuevo_usuario
 import time
+from utils.helpers import LOGO
 
 def renderizar_login():
     """
@@ -77,6 +78,7 @@ def renderizar_sidebar(usuario: dict):
         usuario: Diccionario con los datos del usuario activo (nombre, rol, etc.)
     """
     with st.sidebar:
+        st.image(LOGO, width=100)
         st.markdown(
             f"""
             ### 👤 {usuario['nombre']}
