@@ -1,6 +1,6 @@
-DROP DATABASE IF EXISTS sistema_escolar;
-CREATE DATABASE sistema_escolar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE sistema_escolar;
+DROP DATABASE IF EXISTS scheduleee;
+CREATE DATABASE scheduleee CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE scheduleee;
 
 -- 1. PERIODS table (Catalog)
 CREATE TABLE periodo (
