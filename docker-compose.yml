@@ -1,0 +1,37 @@
+services:
+  backend:
+    build: .
+    container_name: scheduleee_backend
+    ports:
+      - "8501:8501"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
+    volumes:
+      - .:/app
+    # develop mode: reload on change
+    command: uv run streamlit run app.py --server.address=0.0.0.0 --server.fileWatcherType=none 
+
+  db:
+    image: mariadb:latest
+    container_name: scheduleee_db
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASS}
+    ports:
+      - "3307:3306" # Expose on 3307 to avoid conflict with local mysql if any
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  db_data:
+
