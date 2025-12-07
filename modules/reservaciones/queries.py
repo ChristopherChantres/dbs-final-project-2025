@@ -159,3 +159,40 @@ def obtener_mis_reservaciones(id_usuario: str) -> pd.DataFrame:
     finally:
         if cursor:
             cursor.close()
+
+def obtener_periodos() -> list[str]:
+    """
+    Retorna lista de IDs de periodos.
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id_periodo FROM periodo ORDER BY fecha_inicio DESC")
+        # return list of strings
+        return [row[0] for row in cursor.fetchall()]
+    except Exception as e:
+        print("Error fetching periods:", e)
+        return []
+    finally:
+        if cursor:
+            cursor.close()
+
+def obtener_periodo_activo(fecha: date) -> str:
+    """
+    Retorna el id_periodo que cubre la fecha dada, o None si no hay.
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = "SELECT id_periodo FROM periodo WHERE %s BETWEEN fecha_inicio AND fecha_fin LIMIT 1"
+        cursor.execute(query, (fecha,))
+        row = cursor.fetchone()
+        if row:
+            return row[0]
+        return None
+    except Exception as e:
+        print("Error fetching active period:", e)
+        return None
+    finally:
+        if cursor:
+            cursor.close()

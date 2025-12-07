@@ -58,7 +58,20 @@ def obtener_salones_avanzado(capacidad_min: int = 0, tipo: Optional[str] = None)
         return pd.DataFrame()
     
 
-def obtener_top_salones_ocupados(limit: int = 5) -> pd.DataFrame:
+def obtener_periodos() -> pd.DataFrame:
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT id_periodo FROM periodo ORDER BY fecha_inicio DESC;"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        return pd.DataFrame(rows)
+    except mysql.connector.Error as err:
+        print(" Error SQL:", err)
+        return pd.DataFrame()
+
+
+def obtener_top_salones_ocupados(periodo_id: str, limit: int = 5) -> pd.DataFrame:
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -68,19 +81,18 @@ def obtener_top_salones_ocupados(limit: int = 5) -> pd.DataFrame:
                 s.id_salon,
                 s.tipo,
                 s.capacidad,
-                SUM(h.duracion_minutos) AS horas_ocupadas
+                COALESCE(SUM(h.duracion_minutos), 0) AS horas_ocupadas
             FROM salon s
             JOIN horario h ON h.id_salon = s.id_salon
+            WHERE h.id_periodo = %s
             GROUP BY s.id_salon, s.tipo, s.capacidad
             ORDER BY horas_ocupadas DESC
             LIMIT %s;
         """
 
-        cursor.execute(query, (limit,))
+        cursor.execute(query, (periodo_id, limit))
         rows = cursor.fetchall()
         
-        # Convert minutes to hours for display if needed, 
-        # but for now keeping raw minutes or dividing by 60 in view
         if rows:
             for row in rows:
                  # Convertir minutos a horas (float)

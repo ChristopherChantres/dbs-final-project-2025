@@ -6,7 +6,8 @@ from modules.models import Rol, TipoSalon
 from .queries import (
     obtener_catalogo_salones,
     obtener_salones_avanzado,
-    obtener_top_salones_ocupados
+    obtener_top_salones_ocupados,
+    obtener_periodos
 )
 from .transactions import crear_salon, borrar_salon
 
@@ -154,27 +155,33 @@ def view_salones():
     with tab_stats:
         st.subheader("Top Salones Ocupados")
         
-        limit = st.slider("Cantidad a mostrar", 1, 10, 1)
-        df_top = obtener_top_salones_ocupados(limit)
-        
-        if not df_top.empty and 'horas_ocupadas' in df_top.columns:
-            # Gráfico de barras con Altair para mejor visualización
-            # Aseguramos que los nombres de las columnas coincidan con las queries corregidas
-            chart = alt.Chart(df_top).mark_bar().encode(
-                x=alt.X('id_salon', sort='-y', title='Salón'),
-                y=alt.Y('horas_ocupadas', title='Horas Ocupadas'),
-                color=alt.Color('tipo', legend=alt.Legend(title="Tipo")),
-                tooltip=['id_salon', 'tipo', 'capacidad', 'horas_ocupadas']
-            ).properties(
-                height=400
-            ).interactive()
+        # Selector de Periodo
+        df_periodos = obtener_periodos()
+        if not df_periodos.empty:
+            periodo_selec = st.selectbox("Seleccionar Periodo", df_periodos['id_periodo'])
             
-            st.altair_chart(chart, use_container_width=True)
+            limit = st.slider("Cantidad a mostrar", 1, 5, 4)
+            df_top = obtener_top_salones_ocupados(periodo_selec, limit)
             
-            # Tabla de datos debajo
-            st.dataframe(df_top, use_container_width=True, hide_index=True)
+            if not df_top.empty and 'horas_ocupadas' in df_top.columns:
+                # Gráfico de barras con Altair para mejor visualización
+                chart = alt.Chart(df_top).mark_bar().encode(
+                    x=alt.X('id_salon', sort='-y', title='Salón'),
+                    y=alt.Y('horas_ocupadas', title='Horas Ocupadas (Semanal)'),
+                    color=alt.Color('tipo', legend=alt.Legend(title="Tipo")),
+                    tooltip=['id_salon', 'tipo', 'capacidad', 'horas_ocupadas']
+                ).properties(
+                    height=400
+                ).interactive()
+                
+                st.altair_chart(chart, use_container_width=True)
+                
+                # Tabla de datos debajo
+                st.dataframe(df_top, use_container_width=True, hide_index=True)
+            else:
+                st.info("No hay datos de ocupación suficientes para este periodo.")
         else:
-            st.info("No hay datos de ocupación suficientes para generar el reporte.")
+            st.warning("No hay periodos registrados en el sistema.")
 
     # --- TAB 4: NUEVO SALÓN (Solo Admin) ---
     if es_admin and tab_nuevo:

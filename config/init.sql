@@ -95,37 +95,82 @@ CREATE TABLE reservacion (
 -- Periods
 INSERT INTO periodo VALUES 
 ('OTOÑO-2023', '2023-08-01', '2023-12-10'),
-('PRIMAVERA-2024', '2024-01-15', '2024-05-20');
+('PRIMAVERA-2024', '2024-01-15', '2024-05-20'),
+('OTOÑO-2024', '2024-08-01', '2024-12-10'),
+('PRIMAVERA-2025', '2025-01-15', '2025-05-20'),
+('OTOÑO-2025', '2025-08-01', '2025-12-10'),
+('PRIMAVERA-2026', '2026-01-15', '2026-05-20'),
+('OTOÑO-2026', '2026-08-01', '2026-12-10'),
+('PRIMAVERA-2027', '2027-01-15', '2027-05-20'),
+('OTOÑO-2027', '2027-08-01', '2027-12-10'),
+('PRIMAVERA-2028', '2028-01-15', '2028-05-20'),
+('OTOÑO-2028', '2028-08-01', '2028-12-10');
 
 -- Subjects
 INSERT INTO materia VALUES 
 ('LIS-2082', 'Bases de Datos'),
 ('LIS-3040', 'Ingeniería de Software'),
-('MAT-1010', 'Cálculo I');
+('MAT-1010', 'Cálculo I'),
+('MAT-1020', 'Teoría de Matrices'),
+('MAT-1030', 'Análisis Matemático'),
+('MAT-1040', 'Modelos Estocásticos'),
+('LEN-1001', 'Italiano'),
+('LIS-4050', 'Redes Neuronales');
 
 -- Classrooms
 INSERT INTO salon VALUES 
 ('IA104', 30, 'Laboratorio'),
+('IA105', 25, 'Aula'),
+('IA106', 20, 'Aula'),
+('IA201', 35, 'Laboratorio'),
+('IA202', 25, 'Aula'),
+
+('CN101', 45, 'Aula'),
+('CN102', 40, 'Aula'),
+('CN103', 50, 'Auditorio'),
+('CN104', 35, 'Aula'),
 ('CN105', 40, 'Aula'),
-('HU202', 100, 'Auditorio');
+
+('HU201', 90, 'Auditorio'),
+('HU202', 100, 'Auditorio'),
+('HU203', 55, 'Aula'),
+('HU204', 30, 'Aula'),
+
+('NE101', 20, 'Laboratorio'),
+('NE102', 30, 'Laboratorio'),
+('NE201', 40, 'Aula'),
+('NE202', 15, 'Aula'),
+
+('LA101', 40, 'Aula'),
+('LA102', 45, 'Aula'),
+('LA103', 32, 'Laboratorio'),
+('LA201', 28, 'Aula');
 
 -- Users
 INSERT INTO usuario VALUES 
-('U001', 'Dr. Zechinelli', 'Profesor'),
+('100100', 'Dr. Zechinelli', 'Profesor'),
 ('160000', 'Juan Pérez', 'Estudiante'),
-('ADMIN', 'Coordinación', 'Administrador');
+('100000', 'Coordinación', 'Administrador');
 
 -- Courses (We offer Databases in two sections)
 INSERT INTO curso VALUES 
 ('LIS-2082', 1, 'PRIMAVERA-2024', 'Dr. Zechinelli'),
 ('LIS-2082', 2, 'PRIMAVERA-2024', 'Prof. Sustituto'),
-('MAT-1010', 1, 'PRIMAVERA-2024', 'Prof. Matemático');
+('MAT-1010', 1, 'PRIMAVERA-2024', 'Prof. Matemático'),
+('MAT-1020', 1, 'PRIMAVERA-2024', 'Dra. Matriciana'),
+('LEN-1001', 1, 'PRIMAVERA-2024', 'Prof. Linguini'),
+('LIS-4050', 1, 'PRIMAVERA-2024', 'Dra. Neuman');
 
 -- Schedules (Atomicity: 1 row per class block)
 -- Section 1 of Databases: Monday and Wednesday in the Laboratory
 INSERT INTO horario (clave_materia, seccion_curso, id_periodo, id_salon, dia_semana, hora_inicio, duracion_minutos) VALUES 
 ('LIS-2082', 1, 'PRIMAVERA-2024', 'IA104', 'Lunes', '09:00:00', 90),
-('LIS-2082', 1, 'PRIMAVERA-2024', 'IA104', 'Miercoles', '09:00:00', 90);
+('LIS-2082', 1, 'PRIMAVERA-2024', 'IA104', 'Miercoles', '09:00:00', 90),
+('LIS-2082', 2, 'PRIMAVERA-2024', 'IA105', 'Martes', '10:30:00', 90),
+('LIS-2082', 2, 'PRIMAVERA-2024', 'IA105', 'Jueves', '10:30:00', 90),
+('MAT-1010', 1, 'PRIMAVERA-2024', 'HU201', 'Lunes', '12:00:00', 120),
+('LEN-1001', 1, 'PRIMAVERA-2024', 'LA101', 'Viernes', '08:00:00', 60),
+('LIS-4050', 1, 'PRIMAVERA-2024', 'CN103', 'Miercoles', '14:00:00', 110);
 
 -- Reservations (A one-off event)
 INSERT INTO reservacion (id_usuario, id_salon, id_periodo, fecha, hora_inicio, duracion_minutos, motivo) VALUES 
