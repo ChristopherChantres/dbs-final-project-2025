@@ -91,7 +91,6 @@ def crear_reservacion(
         if conn:
             conn.rollback()
         return False, f"Error al crear la reservación: {err}"
-
     finally:
         if cursor:
             cursor.close()
@@ -166,7 +165,6 @@ def crear_reservacion_periodica(
         if conn:
             conn.rollback()
         return False, f"Error al crear reservaciones periódicas: {err}"
-
     finally:
         if cursor:
             cursor.close()
@@ -197,7 +195,6 @@ def cancelar_reservacion(id_reservacion: int) -> tuple[bool, str]:
         if conn:
             conn.rollback()
         return False, f"Error al cancelar la reservación: {err}"
-
     finally:
         if cursor:
             cursor.close()
@@ -237,7 +234,6 @@ def cancelar_reservaciones_por_intervalo(
         if conn:
             conn.rollback()
         return False, f"Error al cancelar reservaciones: {err}"
-
     finally:
         if cursor:
             cursor.close()

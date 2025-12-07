@@ -24,7 +24,7 @@ def main():
         st.divider()
         view_salones()
         view_cursos()
-        # view_horarios()
+        view_horarios()
         view_reservaciones()
 
 if __name__ == "__main__":

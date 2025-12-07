@@ -1,4 +1,3 @@
-# Complex SQL: JOINs for readable view
 # modules/horarios/queries.py
 from config.db import get_connection
 import mysql.connector
@@ -48,12 +47,19 @@ def obtener_horario_completo() -> pd.DataFrame:
     except mysql.connector.Error as err:
         print(" Error MySQL:", err)
         return pd.DataFrame()
-
     except Exception as e:
         print(" Error inesperado:", e)
         return pd.DataFrame()
+    finally:
+        if cursor:
+            cursor.close()
 
-def filtrar_horario(id_periodo: str, dia_semana: str = None) -> pd.DataFrame:
+def filtrar_horario(
+    id_periodo: str = None,
+    dia_semana: str = None,
+    clave_materia: str = None,
+    id_salon: str = None
+) -> pd.DataFrame:
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
@@ -68,7 +74,8 @@ def filtrar_horario(id_periodo: str, dia_semana: str = None) -> pd.DataFrame:
                 m.titulo AS materia,
                 c.clave_materia AS curso_clave,
                 c.seccion AS curso_seccion,
-                c.profesor
+                c.profesor,
+                c.id_periodo
             FROM horario h
             JOIN curso c
                 ON h.clave_materia = c.clave_materia
@@ -78,15 +85,26 @@ def filtrar_horario(id_periodo: str, dia_semana: str = None) -> pd.DataFrame:
                 ON m.clave = c.clave_materia
             JOIN salon s
                 ON s.id_salon = h.id_salon
-            WHERE c.id_periodo = %s
+            WHERE 1=1
         """
 
-        params = [id_periodo]
+        params = []
 
+        if id_periodo:
+            query += " AND c.id_periodo = %s"
+            params.append(id_periodo)
         
-        if dia_semana:
+        if dia_semana and dia_semana != "Todos":
             query += " AND h.dia_semana = %s"
             params.append(dia_semana)
+            
+        if clave_materia:
+            query += " AND c.clave_materia = %s"
+            params.append(clave_materia)
+            
+        if id_salon:
+            query += " AND h.id_salon = %s"
+            params.append(id_salon)
 
         query += " ORDER BY h.hora_inicio ASC;"
 
@@ -98,4 +116,6 @@ def filtrar_horario(id_periodo: str, dia_semana: str = None) -> pd.DataFrame:
     except mysql.connector.Error as err:
         print(" Error MySQL:", err)
         return pd.DataFrame()
-
+    finally:
+        if cursor:
+            cursor.close()
